@@ -13,3 +13,4 @@ export * from './systems/system-a.js';
 export * from './systems/system-b.js';
 export * from './systems/system-c.js';
 export * from './scoring/outcome-classes.js';
+export * from './systems/system-c-v2.js';

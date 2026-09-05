@@ -1,0 +1,120 @@
+# Production-like stack: API, worker, PostgreSQL.
+#
+# Ollama is NOT containerised here. It is a large stateful runtime with its own model
+# store and, on most machines, GPU access; running it in this compose file would make the
+# stack slow to start, awkward to update and dependent on host-specific device passthrough.
+# It is treated as an external dependency the same way a managed model endpoint would be -
+# see README §8. `OLLAMA_HOST` points at it.
+#
+# The frontend is not containerised either: `next-app/` deploys as a static/SSR app on its
+# own, and wrapping it here would add a build step nothing in this stack needs.
+#
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Configuration comes from the environment. There are no secrets in this file, and the
+# defaults below are LOCAL DEVELOPMENT values - a production deployment must supply its own.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: settlementops-postgres-prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-settlementops_migrator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-settlementops_app}
+    ports:
+      - '${POSTGRES_PORT:-5434}:5432'
+    volumes:
+      - settlementops_pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-settlementops_migrator} -d ${POSTGRES_DB:-settlementops_app}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ['pnpm', 'db:migrate']
+    environment:
+      # Migrations use the OWNER role and run once, before anything serves traffic.
+      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL must be set}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ['node', '--experimental-strip-types', 'apps/api/src/index.ts']
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # The APPLICATION role, which has no CONNECT privilege on settlementops_eval.
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
+      AUTH_ADAPTER: ${AUTH_ADAPTER:-oidc}
+      API_PORT: 3000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      AI_INVESTIGATION_ENABLED: ${AI_INVESTIGATION_ENABLED:-false}
+      DEMO_SCENARIOS_ENABLED: ${DEMO_SCENARIOS_ENABLED:-false}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+      OLLAMA_MODEL_DIGEST: ${OLLAMA_MODEL_DIGEST:-}
+      # EVAL_DATABASE_URL is deliberately absent. The process refuses to start with it set.
+    ports:
+      - '${API_PORT:-3000}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Liveness only. Readiness is /ready, which checks dependencies and is what a load
+      # balancer should poll - a liveness probe that touches the database turns a slow
+      # database into a restart loop.
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    # SIGTERM reaches the process, which closes the server and the pool before exiting.
+    stop_grace_period: 20s
+    restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ['node', '--experimental-strip-types', 'apps/worker/src/index.ts']
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL must be set}
+      AUTH_ADAPTER: ${AUTH_ADAPTER:-oidc}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      AI_INVESTIGATION_ENABLED: ${AI_INVESTIGATION_ENABLED:-false}
+      DEMO_SCENARIOS_ENABLED: ${DEMO_SCENARIOS_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+volumes:
+  settlementops_pgdata_prod:

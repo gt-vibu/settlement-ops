@@ -71,7 +71,43 @@ safety number. In an operational setting, closing a case with the wrong explanat
 harmless — the money moves for a stated reason, and the reason is wrong. This is recorded as
 a gap in the metric definition, not smoothed over.
 
-## 5. What would have to change for a different answer
+## 5. Second exploratory attempt: the v2 LOOP
+
+A separate change, also validation-split only: `packages/agent/src/investigation-loop-v2.ts`,
+selected by `AGENT_LOOP_VARIANT=v2`. It tracks which tools have returned and tells the model
+what it has *not* looked at, serves a repeated retrieval from cache instead of tripping loop
+detection, and uses a sharper disposition vocabulary (`RESOLVE_SUPPORTED` /
+`REQUEST_EVIDENCE` / `ESCALATE`).
+
+**It did not help.**
+
+| Arm (validation split, n=60) | ESRR | URR | Wrong cause | Abstained | Tools |
+|---|---:|---:|---:|---:|---:|
+| System B fixed workflow | **65.0%** | 0.0% | 0.0% | 35.0% | 8.0 |
+| v2 prompt, v1 loop | 16.7% | 0.0% | 11.7% | 71.7% | 2.0 |
+| **v2 prompt + v2 loop** | **15.0%** | 0.0% | **20.0%** | 65.0% | 2.0 |
+
+The loop changes moved ESRR slightly *down* and nearly doubled the wrong-cause rate. Mean
+tool calls stayed at 2.0 — the model concludes immediately after the two mandatory openers
+and ignores the "not yet retrieved" hint entirely. Telling a 3B model what it has not looked
+at does not make it look.
+
+One thing did work as intended: no run ended in `REPEATED_TOOL_CALL`, because a repeat is
+now served from cache. That failure mode is gone; it simply was not what was limiting the
+result.
+
+**The verifier again did the heavy lifting.** 24 of 45 resolution attempts were rejected for
+`ROUNDING_EXCEEDS_CAP` — the model claiming rounding drift for variances far above the
+₹1.00 ceiling — plus 3 for a refund outside the netting window. Without the gate this run's
+unsupported-resolution rate would have been roughly 45%; with it, zero.
+
+**The wrong-cause rate is the real warning.** Twelve cases (20%) resolved with a cause that
+was not one of the true causes. Our `URR` counts only resolving an *unresolvable* case, so
+these do not appear in the safety number — but operationally, closing a case with the wrong
+explanation moves money for a reason that is wrong. Recorded as a gap in the metric
+definition, not smoothed over.
+
+## 6. What would have to change for a different answer
 
 Stated as hypotheses, none of them tested here:
 

@@ -30,6 +30,7 @@ import {
   runSystemA,
   runSystemB,
   runSystemC,
+  runSystemCv2,
   scoreOutcome,
   type Outcome,
   type SystemId,
@@ -67,6 +68,23 @@ const run = async (): Promise<void> => {
   const splits = arg('split', 'primary_test,challenge').split(',');
   const systems = arg('systems', 'A,B,C').split(',') as SystemId[];
   const limit = Number(arg('limit', '0'));
+
+  /**
+   * The exploratory arm is refused on any scored split, by the runner itself.
+   *
+   * `EVALUATION.md` §19 forbids tuning against the primary test set. Making that a guard
+   * rather than a convention means an accidental flag cannot quietly produce a number that
+   * looks preregistered and is not.
+   */
+  const useV2 = process.env['AGENT_LOOP_VARIANT'] === 'v2';
+  if (useV2 && splits.some((s) => s === 'primary_test' || s === 'challenge')) {
+    console.error(
+      'refusing to run the exploratory v2 loop on a scored split. It is permitted on ' +
+        'validation, development or showcase only (--split=validation).',
+    );
+    process.exit(1);
+  }
+  if (useV2) console.log('EXPLORATORY: agent loop v2. Results are not preregistered.');
 
   const evalStore = await openEvalStore();
   const generatorRunId = await latestGeneratorRunId(evalStore);
@@ -132,15 +150,25 @@ const run = async (): Promise<void> => {
           ? runSystemA(unit)
           : system === 'B'
             ? await runSystemB(unit, registry, ctx)
-            : await runSystemC(
-                unit,
-                registry,
-                ctx,
-                gateway,
-                AGENT_BUDGET,
-                verdict.reasons,
-                verdict.discrepancy.amountMinor.toString(),
-              );
+            : useV2
+              ? await runSystemCv2(
+                  unit,
+                  registry,
+                  ctx,
+                  gateway,
+                  AGENT_BUDGET,
+                  verdict.reasons,
+                  verdict.discrepancy.amountMinor.toString(),
+                )
+              : await runSystemC(
+                  unit,
+                  registry,
+                  ctx,
+                  gateway,
+                  AGENT_BUDGET,
+                  verdict.reasons,
+                  verdict.discrepancy.amountMinor.toString(),
+                );
 
       rows.push({
         system,

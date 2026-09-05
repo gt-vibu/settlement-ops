@@ -22,6 +22,19 @@ export interface Job {
 
 export const MAX_ATTEMPTS = 3;
 
+/**
+ * Retry backoff, in seconds, indexed by attempt number.
+ *
+ * Without it a failed job returned to PENDING and was re-claimed on the next poll, so a
+ * poison job spent its entire attempt budget inside a few seconds and a transient database
+ * blip got no time to clear. Bounded and short: this is a settlement queue, not a mail
+ * server, and an operator should not wait minutes to see a retry.
+ */
+const BACKOFF_SECONDS: readonly number[] = [5, 30, 120];
+
+export const backoffFor = (attempts: number): number =>
+  BACKOFF_SECONDS[Math.min(attempts, BACKOFF_SECONDS.length - 1)] ?? 120;
+
 interface JobRow {
   id: string;
   merchant_id: string | null;
@@ -42,7 +55,9 @@ export const claimJob = async (
             claimed_at = now(), heartbeat_at = now()
       WHERE id = (
         SELECT id FROM jobs
-         WHERE status = 'PENDING' AND job_type = ANY($1)
+         WHERE status = 'PENDING'
+           AND job_type = ANY($1)
+           AND available_at <= now()
          ORDER BY created_at
          FOR UPDATE SKIP LOCKED
          LIMIT 1
@@ -85,9 +100,12 @@ export const failJob = async (
   await db.pool.query(
     `UPDATE jobs
         SET status = $2, failure_code = $3,
-            completed_at = CASE WHEN $2 = 'ABANDONED' THEN now() ELSE NULL END
+            completed_at = CASE WHEN $2 = 'ABANDONED' THEN now() ELSE NULL END,
+            available_at = CASE WHEN $2 = 'PENDING'
+                                THEN now() + ($4 || ' seconds')::interval
+                                ELSE available_at END
       WHERE id = $1`,
-    [id, terminal ? 'ABANDONED' : 'PENDING', failureCode],
+    [id, terminal ? 'ABANDONED' : 'PENDING', failureCode, String(backoffFor(attempts))],
   );
 };
 
@@ -95,20 +113,41 @@ export const heartbeat = async (db: DatabaseHandle, id: string): Promise<void> =
   await db.pool.query(`UPDATE jobs SET heartbeat_at = now() WHERE id = $1`, [id]);
 };
 
-/** Reclaims jobs whose worker died mid-flight. */
+/**
+ * Reclaims jobs whose worker died mid-flight.
+ *
+ * Two outcomes, and the second one was missing. A stale job below the attempt ceiling goes
+ * back to the queue. A stale job that has already used its attempts is ABANDONED with a
+ * failure code - previously it stayed CLAIMED forever: not running, not failed, and
+ * invisible to anyone looking for problems. A job that disappears is worse than a job that
+ * fails.
+ */
 export const reclaimAbandoned = async (
   db: DatabaseHandle,
   staleSeconds: number,
-): Promise<number> => {
-  const result = await db.pool.query(
+): Promise<{ requeued: number; abandoned: number }> => {
+  const requeued = await db.pool.query(
     `UPDATE jobs
-        SET status = 'PENDING'
+        SET status = 'PENDING',
+            available_at = now() + ($3 || ' seconds')::interval
       WHERE status = 'CLAIMED'
         AND heartbeat_at < now() - ($1 || ' seconds')::interval
         AND attempts < $2`,
+    [String(staleSeconds), MAX_ATTEMPTS, String(BACKOFF_SECONDS[0] ?? 5)],
+  );
+
+  const abandoned = await db.pool.query(
+    `UPDATE jobs
+        SET status = 'ABANDONED',
+            failure_code = COALESCE(failure_code, 'WORKER_LOST_AFTER_MAX_ATTEMPTS'),
+            completed_at = now()
+      WHERE status = 'CLAIMED'
+        AND heartbeat_at < now() - ($1 || ' seconds')::interval
+        AND attempts >= $2`,
     [String(staleSeconds), MAX_ATTEMPTS],
   );
-  return result.rowCount ?? 0;
+
+  return { requeued: requeued.rowCount ?? 0, abandoned: abandoned.rowCount ?? 0 };
 };
 
 export const enqueueJob = async (

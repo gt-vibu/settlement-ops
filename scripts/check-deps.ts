@@ -47,6 +47,48 @@ const RULES: readonly Rule[] = [
     ],
   },
   {
+    /**
+     * The evaluation package owns `eval-store.ts`, the only module that can open the
+     * hidden-truth database. Nothing in the application runtime may link it - not because
+     * the grant would allow a read (it would not), but because the capability should not
+     * be in the process at all.
+     */
+    area: 'apps/api',
+    forbidden: [
+      {
+        pattern: /@settlementops\/evaluation/,
+        why: 'the API must not link evaluation code, which can reach hidden truth (D5)',
+      },
+    ],
+  },
+  {
+    area: 'apps/worker',
+    forbidden: [
+      {
+        pattern: /@settlementops\/evaluation/,
+        why: 'the worker must not link evaluation code, which can reach hidden truth (D5)',
+      },
+    ],
+  },
+  {
+    area: 'packages/workflow',
+    forbidden: [
+      {
+        pattern: /@settlementops\/evaluation/,
+        why: 'workflow is application runtime and must not link evaluation code (D5)',
+      },
+    ],
+  },
+  {
+    area: 'packages/tools',
+    forbidden: [
+      {
+        pattern: /@settlementops\/evaluation/,
+        why: 'tools are reachable by the agent and must not link evaluation code (D5)',
+      },
+    ],
+  },
+  {
     area: 'packages/application',
     forbidden: [
       { pattern: /from\s+'fastify/, why: 'application must not import an HTTP framework' },

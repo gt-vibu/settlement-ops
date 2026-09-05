@@ -7,6 +7,20 @@ AI Buildathon (Track 4).
 number here is a claim about Razorpay, about production systems, or about real money. See
 [Limitations](#11-limitations).
 
+> ### The headline result is negative for the AI, and it is stated up front
+>
+> The preregistered benchmark found that a **strong fixed workflow beat the AI agent
+> decisively**: System B resolved 51.7% of the primary test split; the agent resolved
+> **0.0%**. The AI resolution claim is killed by its own criteria. Full analysis in
+> [`EVALUATION_REPORT.md`](EVALUATION_REPORT.md).
+>
+> That is not a footnote to work around. It is the point of running the experiment: this
+> project uses **deterministic mechanisms for financial correctness** and treats AI as a
+> bounded investigator whose every proposal passes a terminal verifier. The measurement
+> says the deterministic half is carrying the system today, and the safety architecture
+> held throughout — zero unsupported resolutions, zero `AMBIGUOUS` resolutions, every
+> failure path landing on escalation.
+
 ---
 
 ## 1. The problem
@@ -169,6 +183,32 @@ pnpm --filter @settlementops/api start       # http://localhost:3000
 cd next-app && pnpm dev                      # http://localhost:3001
 ```
 
+Check it is up:
+
+```bash
+curl localhost:3000/health    # liveness  - does no I/O
+curl localhost:3000/ready     # readiness - checks database, and the model when AI is on
+curl localhost:3000/metrics   # operational counters
+```
+
+### Production-like stack
+
+```bash
+export POSTGRES_PASSWORD=...            # required; there is no default
+export DATABASE_URL=...                 # application role
+export MIGRATION_DATABASE_URL=...       # migrator role, used once at startup
+docker compose -f docker-compose.prod.yml up -d
+```
+
+API, worker and PostgreSQL, with health checks, an ordered migration gate, a persistent
+volume and a non-root user. Ollama is **not** containerised: it is a large stateful runtime
+with its own model store and, usually, GPU access, so it is treated as an external
+dependency and pointed at with `OLLAMA_HOST`.
+
+With `NODE_ENV=production` the process **refuses to start** if `AUTH_ADAPTER=demo`, if demo
+scenarios are enabled, or if the evaluation credential is present in its environment. Those
+are startup failures, not warnings.
+
 ## 9. Reproducing the benchmark
 
 The evaluation uses its own database and credential.
@@ -184,6 +224,10 @@ pnpm eval:run            # A, B and C over the scored splits -> eval-results.jso
 ```
 
 `pnpm eval:run -- --systems=A,B` skips the model. `--limit=20` is a smoke run.
+
+The **exploratory** agent variants (`AGENT_PROMPT_VARIANT=v2`, `AGENT_LOOP_VARIANT=v2`) are
+refused on any scored split by the runner itself. They may run on validation, development or
+showcase only, and their numbers are never preregistered.
 
 The model is pinned by **digest**, not tag — Ollama tags are mutable. `eval:run` refuses to
 run System C if the installed digest does not match the manifest.
@@ -231,5 +275,8 @@ system escalates rather than choosing.
 | `NOVELTY_ALLOCATION_REVIEW.md` | How `SEEN` and `NOVEL` are defined and allocated |
 | `LEAKAGE_AUDIT_REPORT.md` | The audit that gates the benchmark |
 | `EVALUATION_REPORT.md` | Measured results, including where the AI does not win |
+| `PRODUCTION_READINESS.md` | Area-by-area PASS/WARN with the evidence behind each |
+| `SECURITY_REVIEW.md` | Findings, fixes, and what the review did not cover |
+| `DEMO_RUNBOOK.md` | The rehearsed demo path |
 | `PHASE_REVIEW.md` | Engineering record, newest first |
 | `specs/` | The original specification package |

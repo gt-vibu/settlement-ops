@@ -13,7 +13,14 @@
 export interface ModelIdentity {
   readonly provider: string;
   readonly model: string;
-  readonly digest: string;
+  /**
+   * Expected digest, or null to skip the assertion.
+   *
+   * Null is acceptable for a demo against a locally chosen model. It is NOT acceptable for
+   * anything that produces a comparable number - the benchmark always supplies the frozen
+   * digest, and refuses to run without a match.
+   */
+  readonly digest: string | null;
 }
 
 export type ModelFailure =
@@ -64,6 +71,9 @@ export const createOllamaGateway = (options: GatewayOptions): ModelGateway => ({
       const found = (body.models ?? []).find((m) => m.name === options.identity.model);
       if (found === undefined) {
         return { ok: false, detail: `model ${options.identity.model} is not installed` };
+      }
+      if (options.identity.digest === null) {
+        return { ok: true, detail: `model present; no digest pinned (not reproducible)` };
       }
       if (found.digest !== options.identity.digest) {
         return {

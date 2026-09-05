@@ -139,3 +139,45 @@ describe('verifier', () => {
     expect(result.failures).toContain('EVIDENCE_MISSING');
   });
 });
+
+describe('evidence provenance', () => {
+  it('rejects a citation to a record that exists but was never retrieved', () => {
+    const result = verify(
+      proposal({
+        evidenceRecordIds: ['p1'],
+        // The investigation retrieved nothing, so citing a real record is still a
+        // fabricated citation.
+        retrievedRecordIds: [],
+      }),
+      unitWith(),
+    );
+    expect(result.failures).toContain('EVIDENCE_NOT_RETRIEVED');
+    expect(result.effectiveDisposition).toBe('ESCALATE');
+  });
+
+  it('rejects a fabricated record id even when retrieval is claimed', () => {
+    const result = verify(
+      proposal({
+        evidenceRecordIds: ['does-not-exist'],
+        retrievedRecordIds: ['does-not-exist'],
+      }),
+      unitWith(),
+    );
+    expect(result.failures).toContain('EVIDENCE_NOT_IN_SCOPE');
+  });
+
+  it('accepts a citation that was genuinely retrieved', () => {
+    const result = verify(
+      proposal({ evidenceRecordIds: ['p1'], retrievedRecordIds: ['p1'], cause: 'ROUNDING_DRIFT' }),
+      unitWith(),
+    );
+    expect(result.failures).not.toContain('EVIDENCE_NOT_RETRIEVED');
+  });
+
+  it('skips the check for systems that run no investigation loop', () => {
+    // The deterministic baseline cites the verdict's own record set; there is no
+    // retrieval step to compare against, and inventing one would be theatre.
+    const result = verify(proposal({ cause: 'ROUNDING_DRIFT' }), unitWith());
+    expect(result.failures).not.toContain('EVIDENCE_NOT_RETRIEVED');
+  });
+});

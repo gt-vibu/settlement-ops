@@ -7,7 +7,11 @@
 
 import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
-import type { AuditReader, AuthenticationAdapter } from '@settlementops/application';
+import {
+  createMetrics,
+  type AuditReader,
+  type AuthenticationAdapter,
+} from '@settlementops/application';
 import type { DatabaseHandle } from '@settlementops/persistence';
 import { registerHealthRoutes } from './http/health-routes.js';
 import { registerV1Routes, type V1Deps } from './http/v1-routes.js';
@@ -24,19 +28,85 @@ export interface AppDependencies {
   readonly v1: V1Deps | null;
   readonly workflow: WorkflowDepsBundle | null;
   readonly auditReader: AuditReader | null;
+  /**
+   * Checked by `/ready` when present.
+   *
+   * Readiness answers "can this instance safely serve traffic?", so an instance whose AI
+   * is enabled but whose model is unreachable is NOT ready - it would accept
+   * investigations it cannot complete. Liveness is unaffected.
+   */
+  readonly modelHealth?: (() => Promise<{ ok: boolean; detail: string }>) | null;
+  readonly metrics?: ReturnType<typeof createMetrics>;
 }
 
 export const buildApp = (deps: AppDependencies): FastifyInstance => {
+  const metrics = deps.metrics ?? createMetrics();
   const app = Fastify({
     // Request ids double as correlation ids and are persisted to UUID columns, so the
     // default sequential 'req-1' form is not usable.
     genReqId: () => randomUUID(),
     logger: { level: deps.logLevel },
+    // 1 MiB. The import route raises this deliberately; everything else stays small so a
+    // single request cannot exhaust memory (`EXPERIMENT_CONSTANTS.md` O4).
     bodyLimit: 1_048_576,
-    disableRequestLogging: false,
+
+    // Bound the time a client can hold a connection open sending headers.
+    requestTimeout: 30_000,
+    // Never echo the framework or the route back in an error payload.
+    ajv: { customOptions: { allErrors: false } },
   });
 
-  registerHealthRoutes(app, deps.db);
+  /**
+   * Unexpected failures return the stable envelope and nothing else.
+   *
+   * Fastify's default handler serialises `error.message`, which for a driver error can
+   * contain a connection string, a table name or a fragment of SQL. The request id is the
+   * only thing a caller needs to correlate with the log line that does have the detail.
+   */
+  app.setErrorHandler((error, request, reply) => {
+    request.log.error({ err: error, reqId: request.id }, 'unhandled request failure');
+    const statusCode = (error as { statusCode?: unknown }).statusCode;
+    const status = typeof statusCode === 'number' ? statusCode : 500;
+    if (status === 413) {
+      return reply
+        .code(413)
+        .send(envelope('VALIDATION_ERROR', 'The request body is too large.', request.id));
+    }
+    if (status >= 400 && status < 500) {
+      return reply
+        .code(status)
+        .send(envelope('VALIDATION_ERROR', 'The request could not be processed.', request.id));
+    }
+    return reply
+      .code(500)
+      .send(envelope('INTERNAL_ERROR', SAFE_MESSAGES.INTERNAL_ERROR, request.id));
+  });
+
+  /**
+   * Request latency and error rate, by route pattern - never by URL.
+   *
+   * A URL carries case ids and merchant ids; a route pattern does not. One is a metric,
+   * the other is a slow data leak.
+   */
+  app.addHook('onResponse', async (request, reply) => {
+    const route = request.routeOptions.url ?? 'unmatched';
+    request.log.info(
+      {
+        reqId: request.id,
+        route,
+        method: request.method,
+        status: reply.statusCode,
+        durationMs: Math.round(reply.elapsedTime),
+      },
+      'request completed',
+    );
+    if (reply.statusCode === 409) metrics.increment('conflict.stale_version');
+  });
+
+  /** Operational counters. Not authenticated data, and deliberately unlabelled by tenant. */
+  app.get('/metrics', async () => metrics.snapshot());
+
+  registerHealthRoutes(app, deps.db, deps.modelHealth ?? null);
   registerAuthHook(app, deps.auth);
   if (deps.v1 !== null) registerV1Routes(app, deps.v1);
   if (deps.workflow !== null) registerWorkflowRoutes(app, deps.workflow);
@@ -68,13 +138,6 @@ export const buildApp = (deps: AppDependencies): FastifyInstance => {
   app.setNotFoundHandler(async (request, reply) =>
     reply.code(404).send(envelope('NOT_FOUND', SAFE_MESSAGES.NOT_FOUND, request.id)),
   );
-
-  app.setErrorHandler(async (error, request, reply) => {
-    request.log.error({ err: error }, 'unhandled error');
-    return reply
-      .code(500)
-      .send(envelope('INTERNAL_ERROR', SAFE_MESSAGES.INTERNAL_ERROR, request.id));
-  });
 
   return app;
 };

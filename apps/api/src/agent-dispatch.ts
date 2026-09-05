@@ -14,13 +14,20 @@ import type { RequestContext } from '@settlementops/application';
 import { scopeOf } from '@settlementops/application';
 import { createDatabase, loadUnit, type DatabaseHandle } from '@settlementops/persistence';
 import { createToolRegistry } from '@settlementops/tools';
-import { createOllamaGateway } from '@settlementops/agent';
-import { AGENT_BUDGET, OLLAMA_DEFAULT_HOST, PINNED_MODEL } from '@settlementops/evaluation';
+import {
+  createOllamaGateway,
+  loadAgentBudget,
+  loadModelConfig,
+  type AgentBudgetConfig,
+  type ModelRuntimeConfig,
+} from '@settlementops/agent';
 import { runAiInvestigation, type AiInvestigationDeps } from '@settlementops/workflow';
 
 export interface DispatchDeps {
   readonly db: DatabaseHandle;
   readonly workflow: Omit<AiInvestigationDeps, 'gateway' | 'registry' | 'budget'>;
+  readonly model: ModelRuntimeConfig;
+  readonly budget: AgentBudgetConfig;
 }
 
 export const dispatchAgent = async (
@@ -36,15 +43,15 @@ export const dispatchAgent = async (
     loadUnit(deps.db, toolCtx.scope, asId<PaymentId>(toolCtx.paymentId)),
   );
   const gateway = createOllamaGateway({
-    host: process.env['OLLAMA_HOST'] ?? OLLAMA_DEFAULT_HOST,
-    identity: PINNED_MODEL,
-    temperature: AGENT_BUDGET.temperature,
-    timeoutSeconds: AGENT_BUDGET.requestTimeoutSeconds,
-    maxOutputTokens: 512,
+    host: deps.model.host,
+    identity: { provider: 'ollama', model: deps.model.model, digest: deps.model.digest },
+    temperature: deps.model.temperature,
+    timeoutSeconds: deps.model.requestTimeoutSeconds,
+    maxOutputTokens: deps.model.maxOutputTokens,
   });
 
   const result = await runAiInvestigation(
-    { ...deps.workflow, gateway, registry, budget: AGENT_BUDGET },
+    { ...deps.workflow, gateway, registry, budget: deps.budget },
     ctx,
     {
       caseId: asId<CaseId>(input.caseId),
@@ -68,3 +75,5 @@ export const dispatchAgent = async (
 
 /** Convenience for scripts that need a handle without the whole API. */
 export const openDatabaseFor = (url: string): DatabaseHandle => createDatabase(url);
+
+export { loadAgentBudget, loadModelConfig };

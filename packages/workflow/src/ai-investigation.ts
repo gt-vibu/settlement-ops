@@ -141,6 +141,7 @@ export const runAiInvestigation = async (
     disposition: investigation.proposedDisposition,
     evidenceRecordIds: investigation.evidenceRecordIds,
     rationale: investigation.rationale,
+    retrievedRecordIds: investigation.evidenceRecordIds,
   };
   // TERMINAL. The result is recorded and acted on; it is never returned to the model.
   const verification = verify(proposal, input.unit);

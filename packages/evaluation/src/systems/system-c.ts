@@ -78,6 +78,8 @@ export const runSystemC = async (
     disposition: investigation.proposedDisposition,
     evidenceRecordIds: investigation.evidenceRecordIds,
     rationale: investigation.rationale,
+    // Provenance: the loop records exactly what the tools returned.
+    retrievedRecordIds: investigation.evidenceRecordIds,
   };
   // Terminal, single pass. The result is never shown back to the model.
   const verification = verify(proposal, unit);

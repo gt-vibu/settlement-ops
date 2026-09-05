@@ -34,6 +34,19 @@ export interface Proposal {
   /** Source record ids the proposal claims as evidence. */
   readonly evidenceRecordIds: readonly string[];
   readonly rationale: string;
+  /**
+   * Record ids a tool ACTUALLY returned during this investigation.
+   *
+   * Two different checks follow from this, and both matter:
+   *   - a cited id outside the case is `EVIDENCE_NOT_IN_SCOPE` - it belongs to someone
+   *     else's data, or to nothing;
+   *   - a cited id that is in the case but was never RETRIEVED is `EVIDENCE_NOT_RETRIEVED`
+   *     - the proposal is citing something the investigation never actually looked at.
+   *
+   * Omit it (undefined) for a system that does not run an investigation loop, such as the
+   * deterministic baseline, whose evidence is the verdict's own record set.
+   */
+  readonly retrievedRecordIds?: readonly string[];
 }
 
 export type VerifierFailure =
@@ -41,6 +54,7 @@ export type VerifierFailure =
   | 'DISPOSITION_NOT_PERMITTED_FOR_CAUSE'
   | 'EVIDENCE_MISSING'
   | 'EVIDENCE_NOT_IN_SCOPE'
+  | 'EVIDENCE_NOT_RETRIEVED'
   | 'ARITHMETIC_UNSUPPORTED'
   | 'CAUSE_NOT_SUPPORTED_BY_EVIDENCE'
   | 'TIMING_IMPOSSIBLE'
@@ -262,6 +276,24 @@ export const verify = (proposal: Proposal, unit: ReconciliationUnit): Verificati
   if (foreign.length > 0) {
     failures.push('EVIDENCE_NOT_IN_SCOPE');
     detail.push(`${foreign.length} cited record(s) are not part of this case`);
+  }
+
+  // Provenance: a proposal may only rest on evidence a tool actually returned. Without
+  // this, a model could cite any record id it saw in a briefing - or invent one that
+  // happens to exist - and the citation would look substantiated because the record is
+  // real. Being real is not the same as having been retrieved.
+  if (proposal.retrievedRecordIds !== undefined) {
+    const retrieved = new Set(proposal.retrievedRecordIds);
+    const unretrieved = proposal.evidenceRecordIds.filter(
+      (id) => known.has(id) && !retrieved.has(id),
+    );
+    if (unretrieved.length > 0) {
+      failures.push('EVIDENCE_NOT_RETRIEVED');
+      detail.push(
+        `${unretrieved.length} cited record(s) exist but were never returned by a tool in ` +
+          'this investigation',
+      );
+    }
   }
 
   // An adjustment that could not have affected this settlement is never support.

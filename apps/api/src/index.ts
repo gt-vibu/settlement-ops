@@ -6,7 +6,8 @@
  */
 
 import { cryptoIdGenerator, systemClock } from '@settlementops/shared';
-import { dispatchAgent } from './agent-dispatch.js';
+import { createOllamaGateway } from '@settlementops/agent';
+import { dispatchAgent, loadAgentBudget, loadModelConfig } from './agent-dispatch.js';
 import {
   createAuditWriter,
   createAuditReader,
@@ -27,6 +28,13 @@ import { buildApp } from './app.js';
 
 const main = async (): Promise<void> => {
   const config = loadConfig();
+
+  // Model configuration is validated ONLY when the kill switch is on. A deployment that
+  // does not use AI should not be required to configure a model it will never call, and a
+  // deployment that does use it should discover a bad host at startup, not mid-case.
+  const modelConfig = config.AI_INVESTIGATION_ENABLED ? loadModelConfig() : null;
+  const agentBudget = loadAgentBudget();
+
   const db = createDatabase(config.DATABASE_URL);
   const app = buildApp({
     auth: createDemoAuthAdapter(createUserDirectory(db)),
@@ -53,25 +61,47 @@ const main = async (): Promise<void> => {
       aiInvestigationEnabled: config.AI_INVESTIGATION_ENABLED,
       // Wired only when the kill switch is on. With it off there is no dispatcher at all,
       // so there is not even a code path from a route to a model.
-      dispatchAgent: config.AI_INVESTIGATION_ENABLED
-        ? (ctx, input) =>
-            dispatchAgent(
-              {
-                db,
-                workflow: {
-                  investigations: createInvestigationRepository(db),
-                  transitions: createCaseTransitionRepository(db),
-                  audit: createAuditWriter(db),
-                  ids: cryptoIdGenerator(),
-                  clock: systemClock(),
+      dispatchAgent:
+        config.AI_INVESTIGATION_ENABLED && modelConfig !== null
+          ? (ctx, input) =>
+              dispatchAgent(
+                {
+                  db,
+                  // Validated once at startup, above, so a bad host or model name fails the
+                  // process rather than the first investigation.
+                  model: modelConfig,
+                  budget: agentBudget,
+                  workflow: {
+                    investigations: createInvestigationRepository(db),
+                    transitions: createCaseTransitionRepository(db),
+                    audit: createAuditWriter(db),
+                    ids: cryptoIdGenerator(),
+                    clock: systemClock(),
+                  },
                 },
-              },
-              ctx,
-              input,
-            )
-        : null,
+                ctx,
+                input,
+              )
+          : null,
     },
     auditReader: createAuditReader(db),
+    // Readiness reports the model only when AI is enabled. It is a cheap /api/tags call,
+    // not an inference, so a readiness probe never costs a generation.
+    modelHealth:
+      modelConfig === null
+        ? null
+        : () =>
+            createOllamaGateway({
+              host: modelConfig.host,
+              identity: {
+                provider: 'ollama',
+                model: modelConfig.model,
+                digest: modelConfig.digest,
+              },
+              temperature: modelConfig.temperature,
+              timeoutSeconds: 10,
+              maxOutputTokens: 1,
+            }).assertPinnedModel(),
   });
 
   const shutdown = async (): Promise<void> => {

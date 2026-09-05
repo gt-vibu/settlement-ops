@@ -111,3 +111,48 @@ unhelpful.
 
 It is now counted toward the abstention rate as well as being reported separately. A case
 that was not closed either way is a case the operator still has to work.
+
+---
+
+## CC-021 — Evidence provenance added to the verifier
+
+**Date:** 2026-09-05 · **Type:** security control · **Status:** applied
+
+A production-readiness review found that the verifier checked whether a cited record
+*belonged to the case*, but not whether the investigation had actually *retrieved* it. A
+model could cite any real record id — seen in a briefing, or guessed — and the citation
+would look substantiated because the record exists. Being real is not the same as having
+been retrieved.
+
+Added `EVIDENCE_NOT_RETRIEVED`, and `Proposal.retrievedRecordIds`.
+
+**Effect on the frozen result: none, and provably so.** `system-c.ts` passes the loop's own
+`evidenceRecordIds` as `retrievedRecordIds` — the same array — so the new check cannot fail
+for any frozen-run proposal. The deterministic baseline omits the field entirely, which
+skips the check, because it runs no retrieval step to compare against.
+
+The frozen `eval-results.json`, `EVALUATION_REPORT.md`, policy version and model digest are
+byte-identical and were not regenerated. CI asserts this on every push.
+
+**Why it was not deferred to a new experiment version.** The check strengthens a safety
+control and changes no measured number. Leaving a known provenance gap open in the shipped
+system in order to preserve the bit-identity of code that produced an already-recorded
+result would be the wrong trade.
+
+---
+
+## CC-022 — Model configuration moved out of the evaluation package
+
+**Date:** 2026-09-05 · **Type:** security · **Status:** applied
+
+`apps/api` imported the model identity and agent budget from `@settlementops/evaluation`,
+the package that owns the only module able to open the hidden-truth database. Not
+exploitable — two independent controls stood in the way — but it linked that capability
+into the API process, which is exactly the coupling decision D5 exists to prevent.
+
+Runtime configuration now lives in `packages/agent/src/model-config.ts`, read from the
+environment and validated at startup. `scripts/check-deps.ts` fails the build if any
+runtime package references the evaluation package. Full reasoning in `SECURITY_REVIEW.md`
+HIGH-1.
+
+The frozen manifest keeps its own immutable copy of the values the experiment ran with.

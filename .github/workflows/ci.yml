@@ -57,6 +57,86 @@ jobs:
       - name: Build
         run: pnpm build
 
+  integration:
+    name: Integration and security tests (real PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: settlementops_migrator
+          POSTGRES_PASSWORD: ci_only
+          POSTGRES_DB: settlementops_app
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U settlementops_migrator -d settlementops_app"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        env:
+          MIGRATION_DATABASE_URL: postgres://settlementops_migrator:ci_only@localhost:5434/settlementops_app
+        run: pnpm db:migrate
+
+      - name: Create the isolated evaluation database and role
+        env:
+          PGPASSWORD: ci_only
+        run: |
+          set -e
+          psql -h localhost -p 5434 -U settlementops_migrator -d postgres -c "CREATE ROLE settlementops_eval LOGIN PASSWORD 'ci_only_eval'"
+          psql -h localhost -p 5434 -U settlementops_migrator -d postgres -c "CREATE DATABASE settlementops_eval OWNER settlementops_migrator"
+          # The whole point: neither credential may reach the other database.
+          psql -h localhost -p 5434 -U settlementops_migrator -d postgres -c "REVOKE ALL ON DATABASE settlementops_eval FROM PUBLIC, settlementops_app;
+                GRANT CONNECT ON DATABASE settlementops_eval TO settlementops_eval;
+                REVOKE ALL ON DATABASE settlementops_app FROM PUBLIC, settlementops_eval;
+                GRANT CONNECT ON DATABASE settlementops_app TO settlementops_app"
+
+      - name: Apply evaluation migrations
+        env:
+          EVAL_MIGRATION_DATABASE_URL: postgres://settlementops_migrator:ci_only@localhost:5434/settlementops_eval
+        run: pnpm eval:db:migrate
+
+      - name: Grant the evaluation role its own schema
+        env:
+          PGPASSWORD: ci_only
+        run: |
+          psql -h localhost -p 5434 -U settlementops_migrator -d settlementops_eval -c "GRANT USAGE ON SCHEMA public TO settlementops_eval;
+                GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO settlementops_eval"
+
+      - name: Integration and security tests
+        env:
+          TEST_DATABASE_URL: postgres://settlementops_app:ci_only@localhost:5434/settlementops_app
+          TEST_MIGRATION_DATABASE_URL: postgres://settlementops_migrator:ci_only@localhost:5434/settlementops_app
+        run: pnpm test:integration
+
+  frozen-artifacts:
+    name: Frozen experiment artifacts are immutable
+    runs-on: ubuntu-latest
+    # The official result must not be silently regenerated. CI asserts that the manifest
+    # and the recorded results have not changed, and never runs the generator or the
+    # benchmark itself - a rerun in CI would produce a number nobody preregistered.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Assert the frozen policy version and model digest are unchanged
+        run: |
+          set -e
+          grep -q "POLICY_VERSION = '1.0.0'" packages/domain/src/policy/policy-version.ts || { echo "FAIL: frozen policy version changed"; exit 1; }
+          grep -q "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b" packages/evaluation/src/manifest/model-pin.ts || { echo "FAIL: pinned model digest changed"; exit 1; }
+          test -f EVALUATION_REPORT.md || { echo "FAIL: evaluation report missing"; exit 1; }
+          echo "PASS: frozen experiment artifacts intact"
+
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest

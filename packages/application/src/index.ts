@@ -7,3 +7,4 @@ export * from './ports/workflow-ports.js';
 export * from './use-cases/submit-import.js';
 export * from './use-cases/run-reconciliation.js';
 export * from './use-cases/case-workflow.js';
+export * from './observability/metrics.js';
