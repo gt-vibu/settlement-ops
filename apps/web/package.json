@@ -1,0 +1,8 @@
+{
+  "name": "@settlementops/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "USER-OWNED. Placeholder workspace only - no implementation by the backend pipeline.",
+  "scripts": {},
+  "dependencies": {}
+}

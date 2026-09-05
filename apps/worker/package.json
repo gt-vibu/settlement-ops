@@ -1,0 +1,20 @@
+{
+  "name": "@settlementops/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@settlementops/application": "workspace:*",
+    "@settlementops/domain": "workspace:*",
+    "@settlementops/persistence": "workspace:*",
+    "@settlementops/shared": "workspace:*",
+    "pino": "^9.5.0",
+    "zod": "^3.24.1"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+apps/web/
+next-app/
+pnpm-lock.yaml
+specs/
+*.md

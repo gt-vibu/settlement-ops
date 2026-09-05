@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@settlementops/shared": ["packages/shared/src/index.ts"],
+      "@settlementops/domain": ["packages/domain/src/index.ts"],
+      "@settlementops/application": ["packages/application/src/index.ts"],
+      "@settlementops/persistence": ["packages/persistence/src/index.ts"],
+      "@settlementops/scenario": ["packages/scenario/src/index.ts"],
+      "@settlementops/workflow": ["packages/workflow/src/index.ts"],
+      "@settlementops/evaluation": ["packages/evaluation/src/index.ts"],
+      "@settlementops/tools": ["packages/tools/src/index.ts"],
+      "@settlementops/agent": ["packages/agent/src/index.ts"],
+      "@settlementops/verification": ["packages/verification/src/index.ts"]
+    }
+  }
+}

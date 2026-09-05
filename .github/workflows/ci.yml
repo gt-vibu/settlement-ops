@@ -1,0 +1,121 @@
+name: CI
+
+# Mandatory gates from specs/CI_GATES.md. Critical/high failures block merge.
+# Security checks are never disabled to make CI pass.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Verify (lint, types, tests, policy gates, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Code-size policy
+        run: pnpm check:size
+
+      - name: Dependency direction (architecture boundaries)
+        run: pnpm check:deps
+
+      - name: Money safety (no floating-point money math)
+        run: pnpm check:money
+
+      - name: Secret scan
+        run: pnpm check:secrets
+
+      - name: UI boundary (apps/web and next-app are user-owned)
+        run: pnpm check:ui
+
+      - name: Build
+        run: pnpm build
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Audit (high and above blocks)
+        run: pnpm audit --audit-level=high
+
+  migrations:
+    name: Fresh-database migration smoke test
+    runs-on: ubuntu-latest
+    # specs/MIGRATIONS.md: CI must create a fresh database, apply all migrations and
+    # run a smoke test. The final step additionally asserts that audit immutability
+    # (decision D5) actually holds at the database rather than only in application code.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: settlementops_migrator
+          POSTGRES_PASSWORD: ci_only
+          POSTGRES_DB: settlementops_app
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U settlementops_migrator -d settlementops_app"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations with the migrator role
+        env:
+          MIGRATION_DATABASE_URL: postgres://settlementops_migrator:ci_only@localhost:5434/settlementops_app
+        run: pnpm db:migrate
+
+      - name: Assert audit_events is append-only for the application role
+        env:
+          PGPASSWORD: ci_only
+        run: |
+          set -e
+          psql -h localhost -p 5434 -U settlementops_migrator -d settlementops_app \
+            -c "SELECT has_table_privilege('settlementops_app','audit_events','UPDATE') AS can_update" \
+            -t -A | grep -qx 'f' || { echo "FAIL: application role can UPDATE audit_events"; exit 1; }
+          psql -h localhost -p 5434 -U settlementops_migrator -d settlementops_app \
+            -c "SELECT has_table_privilege('settlementops_app','audit_events','DELETE') AS can_delete" \
+            -t -A | grep -qx 'f' || { echo "FAIL: application role can DELETE audit_events"; exit 1; }
+          echo "PASS: audit_events is append-only for settlementops_app"
