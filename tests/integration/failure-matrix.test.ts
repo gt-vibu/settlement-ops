@@ -28,6 +28,10 @@ import {
 import { verify, type Proposal } from '@settlementops/verification';
 import { type ReconciliationUnit } from '@settlementops/domain';
 import { EXPLORATORY_AI_V2_MODEL } from '@settlementops/evaluation';
+import { ollamaAvailable } from './helpers.js';
+
+const isOllamaUp = await ollamaAvailable('qwen3:8b');
+const liveTest = isOllamaUp ? it : it.skip;
 
 const defaultBudget: AgentBudget = {
   maxToolCalls: 8,
@@ -101,20 +105,24 @@ const dummyUnit: ReconciliationUnit = {
 
 describe('Failure Test Matrix (13 Unsafe/Edge Modes)', () => {
   // 1. Qwen3 normal response
-  it('[1] Qwen3 normal response - gateway schema decoding works', { timeout: 90_000 }, async () => {
-    const gateway = createOllamaGateway({
-      host: 'http://127.0.0.1:11434',
-      identity: EXPLORATORY_AI_V2_MODEL,
-      temperature: 0,
-      timeoutSeconds: 60,
-      maxOutputTokens: 256,
-    });
-    const res = await gateway.chat(
-      [{ role: 'user', content: 'Case facts: discrepancy 29500 INR' }],
-      STEP_SCHEMA,
-    );
-    expect(res.ok).toBe(true);
-  });
+  liveTest(
+    '[1] Qwen3 normal response - gateway schema decoding works',
+    { timeout: 90_000 },
+    async () => {
+      const gateway = createOllamaGateway({
+        host: 'http://127.0.0.1:11434',
+        identity: EXPLORATORY_AI_V2_MODEL,
+        temperature: 0,
+        timeoutSeconds: 60,
+        maxOutputTokens: 256,
+      });
+      const res = await gateway.chat(
+        [{ role: 'user', content: 'Case facts: discrepancy 29500 INR' }],
+        STEP_SCHEMA,
+      );
+      expect(res.ok).toBe(true);
+    },
+  );
 
   // 2. Malformed JSON
   it('[2] Malformed JSON - safely caught and escalates', async () => {

@@ -19,6 +19,10 @@ import {
 } from '@settlementops/agent';
 import { CAUSE_CODES, DISPOSITIONS } from '@settlementops/domain';
 import { TOOL_NAMES } from '@settlementops/tools';
+import { ollamaAvailable } from './helpers.js';
+
+const isOllamaUp = await ollamaAvailable('qwen3:8b');
+const liveTest = isOllamaUp ? it : it.skip;
 
 const EXPLORATORY_QWEN3_IDENTITY = {
   provider: 'ollama',
@@ -35,13 +39,13 @@ const liveGateway = createOllamaGateway({
 });
 
 describe('Qwen3 8B Live Model Gateway', () => {
-  it('confirms the pinned Qwen3 8B digest is installed and active', async () => {
+  liveTest('confirms the pinned Qwen3 8B digest is installed and active', async () => {
     const check = await liveGateway.assertPinnedModel();
     expect(check.ok).toBe(true);
     expect(check.detail).toBe('pinned digest confirmed');
   });
 
-  it('fails loudly when an incorrect digest is asserted', async () => {
+  liveTest('fails loudly when an incorrect digest is asserted', async () => {
     const badGateway = createOllamaGateway({
       host: 'http://127.0.0.1:11434',
       identity: {
@@ -58,7 +62,7 @@ describe('Qwen3 8B Live Model Gateway', () => {
     expect(check.detail).toContain('digest mismatch');
   });
 
-  it(
+  liveTest(
     'produces valid schema-constrained StepDecision with Qwen3 8B',
     { timeout: 60_000 },
     async () => {
@@ -99,7 +103,7 @@ describe('Qwen3 8B Live Model Gateway', () => {
     },
   );
 
-  it(
+  liveTest(
     'produces valid schema-constrained ProposalDecision with Qwen3 8B',
     { timeout: 60_000 },
     async () => {
@@ -147,7 +151,7 @@ describe('Qwen3 8B Live Model Gateway', () => {
     expect(response.failure).toBe('MODEL_UNAVAILABLE');
   });
 
-  it('safely catches MODEL_TIMEOUT on an ultra-short timeout', async () => {
+  liveTest('safely catches MODEL_TIMEOUT on an ultra-short timeout', async () => {
     const timeoutGateway = createOllamaGateway({
       host: 'http://127.0.0.1:11434',
       identity: EXPLORATORY_QWEN3_IDENTITY,

@@ -43,6 +43,21 @@ export const databaseAvailable = async (): Promise<boolean> => {
   }
 };
 
+/** Integration tests skip live model inference when Ollama or required model is not running. */
+export const ollamaAvailable = async (model = 'qwen3:8b'): Promise<boolean> => {
+  try {
+    const host = process.env.OLLAMA_HOST ?? 'http://127.0.0.1:11434';
+    const res = await fetch(`${host}/api/tags`, { signal: AbortSignal.timeout(2_000) });
+    if (!res.ok) return false;
+    const body = (await res.json()) as { models?: Array<{ name: string }> };
+    return (body.models ?? []).some(
+      (m) => m.name === model || m.name.startsWith(`${model}:`) || m.name.startsWith(model),
+    );
+  } catch {
+    return false;
+  }
+};
+
 export const openDatabase = (): DatabaseHandle => createDatabase(TEST_DATABASE_URL);
 
 export const repositories = (db: DatabaseHandle) => ({
