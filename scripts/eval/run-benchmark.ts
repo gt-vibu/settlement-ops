@@ -23,6 +23,7 @@ import {
   AGENT_BUDGET,
   OLLAMA_DEFAULT_HOST,
   PINNED_MODEL,
+  EXPLORATORY_AI_V2_MODEL,
   computeMetrics,
   latestGeneratorRunId,
   loadHiddenTruth,
@@ -99,9 +100,10 @@ const run = async (): Promise<void> => {
   const registry = createToolRegistry(async (ctx) =>
     loadUnit(db, ctx.scope, asId<PaymentId>(ctx.paymentId)),
   );
+  const activeModel = useV2 ? EXPLORATORY_AI_V2_MODEL : PINNED_MODEL;
   const gateway = createOllamaGateway({
     host: process.env['OLLAMA_HOST'] ?? OLLAMA_DEFAULT_HOST,
-    identity: PINNED_MODEL,
+    identity: activeModel,
     temperature: AGENT_BUDGET.temperature,
     timeoutSeconds: AGENT_BUDGET.requestTimeoutSeconds,
     maxOutputTokens: 512,
@@ -202,7 +204,7 @@ const run = async (): Promise<void> => {
   const outPath = arg('out', 'eval-results.json');
   writeFileSync(
     outPath,
-    JSON.stringify({ evaluationRunId, generatorRunId, model: PINNED_MODEL, rows }, null, 2),
+    JSON.stringify({ evaluationRunId, generatorRunId, model: activeModel, rows }, null, 2),
   );
 
   console.log(`\ncases ${selected.length}   rows ${rows.length}   -> ${outPath}\n`);

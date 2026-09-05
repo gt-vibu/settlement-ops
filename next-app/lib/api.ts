@@ -215,3 +215,17 @@ export const instantiateScenario = (
 
 export const runReconciliation = () =>
   post<ReconciliationRun>("/v1/reconciliation-runs", {})
+
+export const approveCase = (id: string, caseVersion: number, note = "") =>
+  post<{ state: string; case_version: number }>(`/v1/cases/${id}/approve`, {
+    case_version: caseVersion,
+    note,
+  })
+
+export const stageCase = (id: string, caseVersion: number, amountMinor = "0") =>
+  post<{ state: string; case_version: number; note: string }>(`/v1/cases/${id}/stage`, {
+    case_version: caseVersion,
+    action_type: "STAGE_LEDGER_ADJUSTMENT",
+    amount_minor: amountMinor,
+  })
+

@@ -22,12 +22,14 @@ import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
 
 import {
+  approveCase,
   DEMO_TENANT_COOKIE,
   DEMO_USER_COOKIE,
   escalateCase,
   instantiateScenario,
   reinvestigateCase,
   runReconciliation,
+  stageCase,
   startInvestigation,
   type ApiResult,
 } from "@/lib/api"
@@ -180,6 +182,43 @@ export async function runReconciliationAction(): Promise<ActionResult> {
   revalidatePath("/reconciliation")
   return mapped
 }
+
+export async function approveCaseAction(
+  caseId: string,
+  caseVersion: number,
+  note = "",
+): Promise<ActionResult> {
+  const result = await approveCase(caseId, caseVersion, note)
+  const mapped = toActionResult(result, (data) => ({
+    status: "ok",
+    message: "Proposal approved successfully.",
+    state: data.state,
+    caseVersion: data.case_version,
+  }))
+  revalidatePath(`/exceptions/${caseId}`)
+  revalidatePath("/exceptions")
+  revalidatePath("/")
+  return mapped
+}
+
+export async function stageCaseAction(
+  caseId: string,
+  caseVersion: number,
+  amountMinor = "0",
+): Promise<ActionResult> {
+  const result = await stageCase(caseId, caseVersion, amountMinor)
+  const mapped = toActionResult(result, (data) => ({
+    status: "ok",
+    message: "Action intent staged successfully.",
+    state: data.state,
+    caseVersion: data.case_version,
+  }))
+  revalidatePath(`/exceptions/${caseId}`)
+  revalidatePath("/exceptions")
+  revalidatePath("/")
+  return mapped
+}
+
 
 /* ------------------------------------------------------------------ identity */
 

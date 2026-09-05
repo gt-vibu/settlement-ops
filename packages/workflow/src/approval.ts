@@ -132,7 +132,7 @@ export const stageApprovedAction = async (
     currency: string;
   },
 ): Promise<ApprovalResult> => {
-  if (!hasAtLeast(ctx, 'APPROVER')) return { kind: 'FORBIDDEN' };
+  if (!hasAtLeast(ctx, 'OPERATOR')) return { kind: 'FORBIDDEN' };
   const scope = scopeOf(ctx);
 
   const staged = await deps.transitions.transition(scope, {

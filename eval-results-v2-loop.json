@@ -19,9 +19,7 @@
       "latencyMs": 22819,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE,REFUND_NETTING",
@@ -69,9 +67,7 @@
       "latencyMs": 13015,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -87,9 +83,7 @@
       "latencyMs": 15068,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE,ROUNDING_DRIFT",
@@ -137,9 +131,7 @@
       "latencyMs": 17447,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,UTR_SPLIT",
@@ -171,9 +163,7 @@
       "latencyMs": 13314,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,UTR_SPLIT",
@@ -205,9 +195,7 @@
       "latencyMs": 12631,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -271,9 +259,7 @@
       "latencyMs": 13713,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -321,9 +307,7 @@
       "latencyMs": 15979,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE",
@@ -355,9 +339,7 @@
       "latencyMs": 13089,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,ROUNDING_DRIFT",
@@ -437,9 +419,7 @@
       "latencyMs": 14100,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE",
@@ -503,9 +483,7 @@
       "latencyMs": 27824,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE",
@@ -521,9 +499,7 @@
       "latencyMs": 11977,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE",
@@ -539,9 +515,7 @@
       "latencyMs": 11889,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -573,9 +547,7 @@
       "latencyMs": 17684,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE",
@@ -591,9 +563,7 @@
       "latencyMs": 28084,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "REFUND_OUTSIDE_WINDOW"
-      ],
+      "verifierFailures": ["REFUND_OUTSIDE_WINDOW"],
       "proposedCause": "REFUND_NETTING",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,UTR_SPLIT",
@@ -625,9 +595,7 @@
       "latencyMs": 13006,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -659,9 +627,7 @@
       "latencyMs": 13400,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "REFUND_OUTSIDE_WINDOW"
-      ],
+      "verifierFailures": ["REFUND_OUTSIDE_WINDOW"],
       "proposedCause": "REFUND_NETTING",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -677,9 +643,7 @@
       "latencyMs": 12459,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "REFUND_OUTSIDE_WINDOW"
-      ],
+      "verifierFailures": ["REFUND_OUTSIDE_WINDOW"],
       "proposedCause": "REFUND_NETTING",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,ROUNDING_DRIFT",
@@ -695,9 +659,7 @@
       "latencyMs": 14644,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,TIMING_LAG",
@@ -713,9 +675,7 @@
       "latencyMs": 12902,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -763,9 +723,7 @@
       "latencyMs": 12763,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,UTR_SPLIT",
@@ -797,9 +755,7 @@
       "latencyMs": 12686,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,TIMING_LAG",
@@ -815,9 +771,7 @@
       "latencyMs": 12760,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE",
@@ -897,9 +851,7 @@
       "latencyMs": 15650,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING,TIMING_LAG",
@@ -915,9 +867,7 @@
       "latencyMs": 13749,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "REFUND_NETTING",
@@ -949,9 +899,7 @@
       "latencyMs": 17080,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE,ROUNDING_DRIFT",
@@ -967,9 +915,7 @@
       "latencyMs": 16572,
       "stopReason": "PROPOSAL_MADE",
       "verifierPassed": false,
-      "verifierFailures": [
-        "ROUNDING_EXCEEDS_CAP"
-      ],
+      "verifierFailures": ["ROUNDING_EXCEEDS_CAP"],
       "proposedCause": "ROUNDING_DRIFT",
       "effectiveDisposition": "ESCALATE",
       "trueCauseTuple": "MDR_FEE,TIMING_LAG",

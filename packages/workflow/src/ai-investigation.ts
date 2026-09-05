@@ -24,6 +24,7 @@ import { POLICY_VERSION, reconcileUnit, type ReconciliationUnit } from '@settlem
 import {
   caseBriefing,
   runInvestigation,
+  runInvestigationV2,
   type AgentBudget,
   type ModelGateway,
 } from '@settlementops/agent';
@@ -76,7 +77,9 @@ export const runAiInvestigation = async (
     untrustedText: input.unit.adjustments.map((a) => a.reference).slice(0, 5),
   });
 
-  const investigation = await runInvestigation({
+  const runLoop =
+    process.env['AGENT_LOOP_VARIANT'] === 'v2' ? runInvestigationV2 : runInvestigation;
+  const investigation = await runLoop({
     gateway: deps.gateway,
     registry: deps.registry,
     ctx: toolCtx,

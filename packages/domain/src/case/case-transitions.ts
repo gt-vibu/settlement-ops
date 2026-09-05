@@ -50,6 +50,7 @@ export const TRANSITIONS: readonly TransitionRule[] = [
   { from: 'INVESTIGATING', to: 'REQUESTING_EVIDENCE', actors: S, event: 'evidence_requested' },
   { from: 'INVESTIGATING', to: 'ESCALATED', actors: SYS_OP, event: 'case_escalated' },
   { from: 'ACTION_PROPOSED', to: 'APPROVAL_PENDING', actors: S, event: 'approval_required' },
+  { from: 'ACTION_PROPOSED', to: 'APPROVED', actors: APPROVER, event: 'approval_recorded' },
   {
     from: 'ACTION_PROPOSED',
     to: 'REQUESTING_EVIDENCE',

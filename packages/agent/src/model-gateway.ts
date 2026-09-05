@@ -103,6 +103,7 @@ export const createOllamaGateway = (options: GatewayOptions): ModelGateway => ({
           stream: false,
           // Schema-constrained decoding: the model cannot emit a free-form decision.
           format: schema,
+          think: false,
           options: {
             temperature: options.temperature,
             num_predict: options.maxOutputTokens,

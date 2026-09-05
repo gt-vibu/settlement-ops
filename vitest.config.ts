@@ -13,6 +13,10 @@ export default defineConfig({
       '@settlementops/persistence': pkg('persistence'),
       '@settlementops/scenario': pkg('scenario'),
       '@settlementops/workflow': pkg('workflow'),
+      '@settlementops/agent': pkg('agent'),
+      '@settlementops/tools': pkg('tools'),
+      '@settlementops/verification': pkg('verification'),
+      '@settlementops/evaluation': pkg('evaluation'),
     },
   },
   test: {

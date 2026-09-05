@@ -59,6 +59,17 @@ export default async function ExceptionDetailPage({
       null,
     ) ?? 1
 
+  const proposedEvent = events.find((e) => e.event_type === "action_proposed")
+  const latestProposal = proposedEvent?.payload as
+    | {
+        cause?: string
+        disposition?: string
+        rationale?: string
+        evidence_record_ids?: string[]
+        tool_calls?: number
+      }
+    | undefined
+
   return (
     <AppShell identity={who} activePath="/exceptions">
       <PageBody>
@@ -129,7 +140,14 @@ export default async function ExceptionDetailPage({
 
             <Panel title="Action">
               <div className="p-3">
-                <CaseActions caseId={item.id} caseVersion={caseVersion} state={item.state} />
+                <CaseActions
+                  caseId={item.id}
+                  caseVersion={caseVersion}
+                  state={item.state}
+                  roles={who?.roles ?? []}
+                  amountMinor={item.discrepancy_amount_minor}
+                  latestProposal={latestProposal}
+                />
               </div>
             </Panel>
 

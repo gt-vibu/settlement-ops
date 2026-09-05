@@ -151,6 +151,13 @@ is not there.
 
 Prerequisites: Node 24+, pnpm 10, Docker, [Ollama](https://ollama.com).
 
+> **Important: Ollama is required to run the AI investigation.**  
+> The AI investigation engine connects to a local [Ollama](https://ollama.com) instance (default `http://127.0.0.1:11434` or configured via `OLLAMA_HOST`):
+> - **Interactive Demo & UI investigations**: requires `qwen3:8b` (`ollama pull qwen3:8b`).
+> - **Official benchmark reproduction**: requires `qwen2.5:3b-instruct-q4_K_M` (`ollama pull qwen2.5:3b-instruct-q4_K_M`).
+> 
+> Ensure Ollama is running (`ollama serve`) before starting investigations. If Ollama is stopped or unreachable, the system fails closed gracefully: `/ready` reports `model: false`, and investigations are safely diverted to human escalation (`MODEL_UNAVAILABLE`) with zero financial mutation.
+
 ```bash
 pnpm install
 pnpm db:up                                   # PostgreSQL on 5434
@@ -165,15 +172,18 @@ start if it is):
 DATABASE_URL=postgres://settlementops_app:local_dev_only@localhost:5434/settlementops_app
 MIGRATION_DATABASE_URL=postgres://settlementops_migrator:local_dev_only@localhost:5434/settlementops_app
 AUTH_ADAPTER=demo
-API_PORT=3000
+API_PORT=3001
 AI_INVESTIGATION_ENABLED=true
 DEMO_SCENARIOS_ENABLED=true
+OLLAMA_MODEL=qwen3:8b
 ```
 
-Pull the pinned model:
+Pull the required model in Ollama:
 
 ```bash
-ollama pull qwen2.5:3b-instruct-q4_K_M
+ollama pull qwen3:8b                         # for demo / exploratory AI investigation
+# or
+ollama pull qwen2.5:3b-instruct-q4_K_M       # for official frozen benchmark reproduction
 ```
 
 Run the API and the UI:

@@ -34,4 +34,19 @@ export const PINNED_MODEL: ModelIdentity = {
   quantization: 'Q4_K_M',
 };
 
+/** Official frozen benchmark model identity. Immutable. */
+export const OFFICIAL_FROZEN_SYSTEM_C_MODEL: ModelIdentity = PINNED_MODEL;
+
+/** Exploratory AI v2 model identity. */
+export const EXPLORATORY_AI_V2_MODEL: ModelIdentity = {
+  provider: 'ollama',
+  model: 'qwen3:8b',
+  digest: '500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41',
+  parameterSize: '8.2B',
+  quantization: 'Q4_K_M',
+};
+
+/** Demo AI model identity. */
+export const DEMO_AI_MODEL: ModelIdentity = EXPLORATORY_AI_V2_MODEL;
+
 export const OLLAMA_DEFAULT_HOST = 'http://127.0.0.1:11434';
